@@ -6,8 +6,9 @@ services:
     plan: free
     rootDir: Backend
     buildCommand: pip install -r requirements.txt
-    preDeployCommand: python -m app.init_db
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # Free Render services do not support pre-deploy commands. Migrations are
+    # idempotent, so run them before starting each released API instance.
+    startCommand: python -m app.init_db && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /
     autoDeployTrigger: checksPass
     envVars:
