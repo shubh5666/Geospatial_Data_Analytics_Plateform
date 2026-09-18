@@ -1,5 +1,5 @@
 {
   "buildCommand": "npm run build --workspace=Frontend",
-  "installCommand": "npm ci",
+  "installCommand": "npm ci --include=dev",
   "outputDirectory": "Frontend/dist"
 }
