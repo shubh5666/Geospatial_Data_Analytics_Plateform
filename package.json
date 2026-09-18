@@ -1,0 +1,26 @@
+{
+  "name": "darukaa-earth",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "Frontend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=Frontend",
+    "build": "npm run build --workspace=Frontend",
+    "lint": "npm run lint --workspace=Frontend",
+    "test": "npm run test --workspace=Frontend",
+    "test:e2e": "npm run test:e2e --workspace=Frontend",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "node scripts/prepare-hooks.mjs"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "devDependencies": {
+    "husky": "9.1.7",
+    "lint-staged": "17.5.1",
+    "prettier": "3.9.8"
+  }
+}

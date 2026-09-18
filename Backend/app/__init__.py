@@ -1,0 +1,1 @@
+"""Darukaa.Earth backend application."""

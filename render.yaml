@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: darukaa-earth-api
+    runtime: python
+    region: singapore
+    plan: free
+    rootDir: Backend
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: python -m app.init_db
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: darukaa-earth-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: darukaa-earth-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: darukaa-earth-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: darukaa-earth-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: darukaa-earth-db
+          property: password
+      - key: DB_SSLMODE
+        value: prefer
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ACCESS_TOKEN_MINUTES
+        value: "30"
+databases:
+  - name: darukaa-earth-db
+    region: singapore
+    plan: free
+    postgresMajorVersion: "17"
+    databaseName: darukaa_earth
+    user: darukaa_earth

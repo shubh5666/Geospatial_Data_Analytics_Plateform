@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_NAME: darukaa_earth
+      DB_USER: darukaa_earth
+      DB_PASSWORD: ci-password
+      DB_SSLMODE: disable
+      JWT_SECRET_KEY: ci-signing-key-which-is-longer-than-thirty-two-bytes
+      JWT_ACCESS_TOKEN_MINUTES: "30"
+    services:
+      postgres:
+        image: postgis/postgis:17-3.6
+        env:
+          POSTGRES_DB: darukaa_earth
+          POSTGRES_USER: darukaa_earth
+          POSTGRES_PASSWORD: ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U darukaa_earth -d darukaa_earth"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: Backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Lint backend
+        run: python -m ruff check app tests
+      - name: Test backend
+        run: python -m unittest discover -s tests -v
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Lint frontend
+        run: npm run lint
+      - name: Test frontend
+        run: npm run test
+      - name: Build frontend
+        run: npm run build

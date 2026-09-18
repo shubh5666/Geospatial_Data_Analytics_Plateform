@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+.local
+tmp
+Backend/venv
+Backend/.env
+Frontend/.env
+package-lock.json
+playwright-report
+test-results
