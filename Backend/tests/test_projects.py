@@ -499,6 +499,31 @@ class ProjectSiteIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 422)
 
+    def test_simulate_site_measurements(self):
+        project = self.project()
+        site = self.site(project)
+        res = self.request(f"/sites/{site['id']}/measurements")
+        self.assertEqual(res.json()["measurements"], [])
+
+        sim_res = self.request(f"/sites/{site['id']}/simulate", method="POST")
+        self.assertEqual(sim_res.status_code, 201)
+        data = sim_res.json()
+        self.assertEqual(len(data["measurements"]), 12)
+        self.assertTrue(all(m["is_mock"] for m in data["measurements"]))
+
+        summary = self.request(f"/projects/{project['id']}/summary").json()
+        self.assertTrue(summary["has_mock_data"])
+        self.assertIsNotNone(summary["carbon_tonnes_co2e"])
+        self.assertIsNotNone(summary["biodiversity_score"])
+        self.assertGreater(summary["carbon_tonnes_co2e"], 0)
+        self.assertGreater(summary["biodiversity_score"], 0)
+
+        # Bob cannot simulate Alice's site
+        self.assertEqual(
+            self.request(f"/sites/{site['id']}/simulate", method="POST", user=1).status_code,
+            404,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

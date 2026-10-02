@@ -24,6 +24,7 @@ export function ProjectDashboard({ project, view, onViewMap }: { project: Projec
   const [chartLoading, setChartLoading] = useState(false);
   const [chartError, setChartError] = useState('');
   const [chartVersion, setChartVersion] = useState(0);
+  const [simulating, setSimulating] = useState(false);
   const selected = sites.find((site) => site.id === selectedId);
   useEffect(() => {
     const controller = new AbortController(); setLoading(true); setError('');
@@ -59,8 +60,28 @@ export function ProjectDashboard({ project, view, onViewMap }: { project: Projec
       {view === 'overview' ? <div className="map-and-sites"><section className="panel map-panel"><header className="panel-header"><div><h2>Explore your sites</h2><p>One landscape. Many possibilities.</p></div><div className="map-header-actions"><button className="icon-button" aria-label="Add site using GeoJSON" title="Add site using GeoJSON" onClick={openGeoJSON}><CodeXml size={18} /></button><button className="button primary small-button" disabled={drawing} onClick={() => { setDrawing(true); setSavedMessage(''); }}><Plus size={15} />Draw site</button></div></header><SiteMap sites={sites} selectedId={selectedId} onSelect={setSelectedId} drawing={drawing} onCancel={() => setDrawing(false)} onBoundary={(polygon) => { setDraft(polygon); setDrawing(false); setSaveError(''); setSiteDialog(true); }} /></section>
         <aside className="panel site-list-panel"><header className="panel-header"><h2>Project sites <span className="count-badge">{sites.length}</span></h2><span className="list-caption">SELECT TO EXPLORE</span></header><div className="site-list">{sites.length ? sites.map((site, index) => <button key={site.id} className={`site-list-item ${selectedId === site.id ? 'selected' : ''}`} onClick={() => setSelectedId(site.id)}><span className="site-index">{String(index + 1).padStart(2, '0')}</span><div><strong>{site.name}</strong><small>{number(site.area_hectares)} hectares <span>·</span> Polygon site</small></div><ChevronRight size={16} /></button>) : <div className="site-list-empty"><MapPin size={23} /><p>No sites yet.</p><span>Draw your first boundary<br />to get started.</span><button className="text-button" onClick={openGeoJSON}>Add with GeoJSON <ArrowUpRight size={13} /></button></div>}</div>{selected && <div className="selected-site-note"><div className="eyebrow">SELECTED SITE</div><strong>{selected.name}</strong><span><CalendarDays size={13} />Added {shortDate(selected.created_at)}</span><p>{project.is_demo ? 'Sample boundary for exploring the workspace.' : 'Your boundary is saved to this project.'}</p></div>}<footer className="site-list-footer"><Leaf size={15} />Small places. Lasting possibilities.</footer></aside>
       </div> : <section className="panel sites-table-panel"><header className="panel-header"><div><h2>Sites in this project <span className="count-badge">{sites.length}</span></h2><p>View boundaries and select a site to see its performance.</p></div><button className="button primary small-button" onClick={() => { onViewMap(); setDrawing(true); }}><Plus size={15} />Draw site</button></header>{sites.length ? <div className="table-scroll"><table><thead><tr><th>Site name</th><th>Area</th><th>Added</th><th><span className="sr-only">Actions</span></th></tr></thead><tbody>{sites.map((site) => <tr key={site.id}><td><MapPin size={16} />{site.name}</td><td>{number(site.area_hectares)} ha</td><td>{shortDate(site.created_at)}</td><td><button className="text-button" onClick={() => { setSelectedId(site.id); onViewMap(); }}>View on map <ArrowUpRight size={14} /></button></td></tr>)}</tbody></table></div> : <div className="site-list-empty"><MapPin size={28} /><h3>Your first site starts here.</h3><p>Draw a boundary or add coordinates to start.</p><button className="button secondary" onClick={openGeoJSON}>Add with GeoJSON</button></div>}</section>}
-      {chartError && <div className="error" role="alert">{chartError}<button className="text-button" onClick={() => setChartVersion((v) => v + 1)}>Retry measurements</button></div>}
-      <TimelineChart site={selected} measurements={measurements} loading={chartLoading} />
+      {chartError && <div className="error" role="alert">{chartError} <button className="text-button" onClick={() => setChartVersion((v) => v + 1)}>Try again</button></div>}
+      <TimelineChart
+        site={selected}
+        measurements={measurements}
+        loading={chartLoading}
+        simulating={simulating}
+        onSimulate={async () => {
+          if (!selected) return;
+          setSimulating(true);
+          setChartError('');
+          try {
+            const data = await api<{ site_id: string; measurements: Measurement[] }>(`/sites/${selected.id}/simulate`, { method: 'POST' });
+            setMeasurements(data.measurements);
+            setVersion((v) => v + 1);
+            setChartVersion((v) => v + 1);
+          } catch (e) {
+            setChartError(messageOf(e));
+          } finally {
+            setSimulating(false);
+          }
+        }}
+      />
     </>}
     {siteDialog && <Dialog title={draft ? 'Give this place a name.' : 'Add a site with GeoJSON'} busy={saving} onClose={() => { setSiteDialog(false); setDraft(null); }}><p className="muted">{draft ? `Your boundary has ${draft.coordinates[0].length - 1} points. Save it to ${project.name}.` : 'Paste a Polygon geometry with [longitude, latitude] coordinates.'}</p>{saveError && <div className="error" role="alert">{saveError}</div>}<form onSubmit={async (event) => {
       event.preventDefault(); if (saving) return;

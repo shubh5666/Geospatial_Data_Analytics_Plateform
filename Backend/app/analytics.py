@@ -147,3 +147,36 @@ def create_demo_project(user: CurrentUser, db: Database, response: Response):
                 (site["id"], recorded_on, carbon, biodiversity),
             )
     return project
+
+
+@router.post(
+    "/sites/{site_id}/simulate", response_model=SiteMeasurements, status_code=201
+)
+def simulate_site_measurements(site_id: UUID, user: CurrentUser, db: Database):
+    owned_site(site_id, user.id, db)
+    area = db.execute(
+        "SELECT coalesce(ST_Area(boundary::geography) / 10000, 1.0) AS hectares "
+        "FROM sites WHERE id = %s",
+        (site_id,),
+    ).fetchone()
+    hectares = max(float(area["hectares"] if area and area["hectares"] else 1.0), 0.1)
+
+    for month in range(12):
+        absolute_month = 2025 * 12 + 8 + month
+        recorded_on = date(absolute_month // 12, absolute_month % 12 + 1, 1)
+        carbon = round(hectares * (3.5 + month * 0.22), 3)
+        biodiversity = round(min(98.0, 52.0 + month * 1.9), 2)
+        db.execute(
+            "INSERT INTO site_measurements (site_id, recorded_on, carbon_tonnes_co2e, "
+            "biodiversity_score, is_mock) VALUES (%s, %s, %s, %s, TRUE) "
+            "ON CONFLICT (site_id, recorded_on) DO NOTHING",
+            (site_id, recorded_on, carbon, biodiversity),
+        )
+
+    measurements = db.execute(
+        "SELECT recorded_on, carbon_tonnes_co2e, biodiversity_score, is_mock "
+        "FROM site_measurements WHERE site_id = %s ORDER BY recorded_on",
+        (site_id,),
+    ).fetchall()
+    return {"site_id": site_id, "measurements": measurements}
+
