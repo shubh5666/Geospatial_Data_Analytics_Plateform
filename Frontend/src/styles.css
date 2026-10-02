@@ -94,3 +94,13 @@
 .cursor-coord-badge{position:absolute;pointer-events:none;background:#183f32;color:#fff;font-size:9.5px;padding:4px 8px;border-radius:5px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,0.22);z-index:20;transform:translate(12px,-28px);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
 .cursor-coord-badge small{color:#b6dcb3;font-size:8.5px}
 
+/* Map Rotation & 3D Tilt Controls */
+.map-rotate-controls{position:absolute;right:15px;top:170px;background:#fff;border:1px solid #dce3d3;border-radius:6px;display:flex;flex-direction:column;box-shadow:0 3px 8px rgba(52,76,35,0.12);overflow:hidden;z-index:3}
+.map-rotate-controls>button{background:none;border:0;padding:8px;color:#526d48;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s,color .15s}
+.map-rotate-controls>button+button{border-top:1px solid #e9eee1}
+.map-rotate-controls>button:hover{background:#eef4e3;color:#1e482b}
+.basemap-toggle{position:absolute;bottom:15px;left:15px;background:#fffffffa;backdrop-filter:blur(6px);border:1px solid #cddbc3;border-radius:6px;font-size:11px;font-weight:600;color:#284f33;padding:8px 12px;z-index:3;display:inline-flex;align-items:center;gap:7px;box-shadow:0 3px 10px rgba(27,61,35,0.12);cursor:pointer;transition:all .15s}
+.basemap-toggle:hover:not(:disabled){background:#f0f5e8;transform:translateY(-1px)}
+.mapbox-wrapper .map-mode{display:none}
+
+

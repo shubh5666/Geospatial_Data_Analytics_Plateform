@@ -16,6 +16,7 @@
     "chart.js": "4.5.1",
     "lucide-react": "1.47.0",
     "mapbox-gl": "3.31.0",
+    "maplibre-gl": "^6.11.2",
     "react": "19.3.0",
     "react-chartjs-2": "5.3.1",
     "react-dom": "19.3.0"
