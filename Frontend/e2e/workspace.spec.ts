@@ -27,7 +27,7 @@ async function signIn(page: Page, email: string) {
   await page.goto('/');
   await page.getByLabel('Email address').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Sign in to workspace' }).click();
+  await page.getByRole('button', { name: /Login|Sign in to workspace/i }).click();
   await expect(page.getByRole('button', { name: 'New project', exact: true })).toBeVisible();
 }
 
