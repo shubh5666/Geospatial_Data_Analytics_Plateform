@@ -78,3 +78,19 @@
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition:none!important;scroll-behavior:auto!important}}
 
 .map-site-marker{position:absolute;transform:translate(-50%,-50%);width:25px;height:25px;border:1px solid #779465;border-radius:50%;background:#fff;color:#426634;font-size:9px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px #2c492114}.map-site-marker.selected{background:#224c37;color:#fff;border-color:#224c37}.map-axis{pointer-events:none}.map-axis span{position:absolute;color:#8b9a7c;font-size:7px;pointer-events:none}.longitude-label{bottom:3px}.latitude-label{left:5px}
+
+/* Enhanced Map Drawing Tools */
+.draw-toolbar{position:absolute;bottom:12px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,0.96);backdrop-filter:blur(8px);border:1px solid #cadbc0;border-radius:9px;padding:7px 10px;box-shadow:0 6px 20px rgba(23,61,35,0.15);z-index:10;flex-wrap:wrap}
+.draw-tools-group{display:inline-flex;align-items:center;gap:3px;background:#edf3e7;padding:3px;border-radius:7px;border:1px solid #d7e4cf}
+.draw-tool-btn{border:0;background:none;padding:5px 9px;border-radius:5px;font-size:10.5px;font-weight:600;color:#536c4b;display:inline-flex;align-items:center;gap:5px;cursor:pointer;transition:all .15s}
+.draw-tool-btn:hover{color:#1a4529;background:rgba(255,255,255,0.5)}
+.draw-tool-btn.active{background:#fff;color:#184227;box-shadow:0 1.5px 4px rgba(28,62,38,0.14)}
+.draw-info{display:flex;align-items:center;gap:8px;font-size:10px;color:#2f4e36;flex:1;min-width:180px}
+.draw-info-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.draw-area-chip{display:inline-flex;align-items:center;gap:4px;background:#e2f2d7;border:1px solid #bfdfa8;color:#20572e;font-weight:700;font-size:10px;padding:2px 7px;border-radius:12px}
+.draw-actions{display:flex;align-items:center;gap:5px}
+.snap-ring{animation:snapPulse 1.1s infinite ease-in-out;transform-origin:center}
+@keyframes snapPulse{0%{r:9;stroke-opacity:1;stroke-width:3}50%{r:16;stroke-opacity:0.3;stroke-width:1.5}100%{r:9;stroke-opacity:1;stroke-width:3}}
+.cursor-coord-badge{position:absolute;pointer-events:none;background:#183f32;color:#fff;font-size:9.5px;padding:4px 8px;border-radius:5px;white-space:nowrap;box-shadow:0 3px 10px rgba(0,0,0,0.22);z-index:20;transform:translate(12px,-28px);letter-spacing:.2px;display:flex;align-items:center;gap:6px}
+.cursor-coord-badge small{color:#b6dcb3;font-size:8.5px}
+

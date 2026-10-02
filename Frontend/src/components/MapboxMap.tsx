@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl, { type GeoJSONSource } from 'mapbox-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import type { Feature, Polygon } from 'geojson';
-import { X } from 'lucide-react';
-import { siteBounds } from '../geo';
+import { Sparkles, X } from 'lucide-react';
+import { createCenteredPlot, siteBounds } from '../geo';
 import type { MapProps } from './SiteMap';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
@@ -71,6 +71,26 @@ export default function MapboxMap(props: MapProps & { token: string; onFallback:
   return <div className="mapbox-wrapper"><div className="mapbox-container" ref={container} />
     {mapError && <div className="map-error" role="status">Map background unavailable.<button className="text-button" onClick={props.onFallback}>Use coordinate workspace</button></div>}
     <button className="basemap-toggle" disabled={props.drawing} onClick={() => { setReady(false); map.current?.setStyle(satellite ? 'mapbox://styles/mapbox/outdoors-v12' : 'mapbox://styles/mapbox/satellite-streets-v12'); setSatellite(!satellite); }}>{satellite ? 'Outdoors view' : 'Satellite view'}</button>
-    {props.drawing && <div className="draw-toolbar"><span>Click to draw. Click the first point to finish.</span><button className="icon-button" aria-label="Cancel drawing" onClick={props.onCancel}><X size={18} /></button></div>}
+    {props.drawing && (
+      <div className="draw-toolbar">
+        <div className="draw-info">
+          <span className="pulse-dot" />
+          <span className="draw-info-text">Click corners on map. Click first point or double-click to finish.</span>
+        </div>
+        <div className="draw-actions">
+          <button
+            type="button"
+            className="button secondary small-button"
+            title="Place a ready 5-hectare plot in current map view"
+            onClick={() => latest.current.onBoundary(createCenteredPlot(siteBounds(latest.current.sites), 5))}
+          >
+            <Sparkles size={13} />5 ha Plot
+          </button>
+          <button type="button" className="icon-button" aria-label="Cancel drawing" onClick={props.onCancel}>
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+    )}
   </div>;
 }

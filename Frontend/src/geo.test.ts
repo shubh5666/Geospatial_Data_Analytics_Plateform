@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { closePolygon, coordinateAt, readPolygon, siteBounds } from './geo';
+import { approximateHectares, closePolygon, coordinateAt, createCenteredPlot, createRectanglePolygon, readPolygon, siteBounds } from './geo';
 import type { Site } from './types';
 
 describe('boundary editing', () => {
@@ -27,5 +27,19 @@ describe('boundary editing', () => {
     expect(bounds[1]).toBeLessThan(89);
     expect(bounds[2]).toBe(180);
     expect(bounds[3]).toBe(90);
+  });
+  it('calculates approximate hectares and builds rectangular polygons accurately', () => {
+    const rect = createRectanglePolygon([77.0, 28.0], [77.01, 28.01]);
+    expect(rect.type).toBe('Polygon');
+    expect(rect.coordinates[0]).toHaveLength(5);
+    const ha = approximateHectares(rect.coordinates[0].slice(0, 4));
+    expect(ha).toBeGreaterThan(50);
+    expect(ha).toBeLessThan(150);
+  });
+  it('generates a centered standard plot of roughly the requested size', () => {
+    const plot = createCenteredPlot([76.085, 11.585, 76.155, 11.65], 5);
+    expect(plot.type).toBe('Polygon');
+    const ha = approximateHectares(plot.coordinates[0].slice(0, 4));
+    expect(ha).toBeCloseTo(5, 0);
   });
 });

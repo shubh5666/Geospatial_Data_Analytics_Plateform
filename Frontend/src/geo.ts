@@ -23,6 +23,47 @@ export function closePolygon(points: number[][]): Polygon {
   return { type: 'Polygon', coordinates: [[...points.map((point) => [...point]), [...points[0]]]] };
 }
 
+export function approximateHectares(points: number[][]): number {
+  if (points.length < 3) return 0;
+  const avgLat = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+  const latScale = 111320;
+  const lonScale = 111320 * Math.cos((avgLat * Math.PI) / 180);
+  let areaM2 = 0;
+  for (let i = 0; i < points.length; i++) {
+    const j = (i + 1) % points.length;
+    const xi = points[i][0] * lonScale;
+    const yi = points[i][1] * latScale;
+    const xj = points[j][0] * lonScale;
+    const yj = points[j][1] * latScale;
+    areaM2 += xi * yj - xj * yi;
+  }
+  return Math.abs(areaM2) / 2 / 10000;
+}
+
+export function createRectanglePolygon(p1: [number, number], p2: [number, number]): Polygon {
+  const minX = Math.min(p1[0], p2[0]), maxX = Math.max(p1[0], p2[0]);
+  const minY = Math.min(p1[1], p2[1]), maxY = Math.max(p1[1], p2[1]);
+  if (Math.abs(maxX - minX) < 0.00001 || Math.abs(maxY - minY) < 0.00001) {
+    throw new Error('Drag across the map to define a site area.');
+  }
+  return {
+    type: 'Polygon',
+    coordinates: [[[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY], [minX, minY]]],
+  };
+}
+
+export function createCenteredPlot(bounds: Bounds, hectares = 5): Polygon {
+  const centerLon = (bounds[0] + bounds[2]) / 2;
+  const centerLat = (bounds[1] + bounds[3]) / 2;
+  const sideMeters = Math.sqrt(hectares * 10000);
+  const latDelta = (sideMeters / 111320) / 2;
+  const lonDelta = (sideMeters / (111320 * Math.cos((centerLat * Math.PI) / 180))) / 2;
+  return createRectanglePolygon(
+    [centerLon - lonDelta, centerLat - latDelta],
+    [centerLon + lonDelta, centerLat + latDelta],
+  );
+}
+
 export function readPolygon(text: string): Polygon {
   let geometry: unknown;
   try { geometry = JSON.parse(text); } catch { throw new Error('Enter valid GeoJSON. Check the commas and brackets.'); }
