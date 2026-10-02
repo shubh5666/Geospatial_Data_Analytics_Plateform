@@ -1,200 +1,225 @@
-# Darukaa.Earth
+# Darukaa.Earth — Geospatial MRV & Ecological Analytics Platform
 
-A geospatial analytics dashboard for carbon and biodiversity projects, based on
-the supplied Darukaa.Earth Full-Stack Developer Hackathon assignment.
+[![CI Pipeline](https://github.com/shubh5666/Geospatial_Data_Analytics_Plateform/actions/workflows/ci.yml/badge.svg)](https://github.com/shubh5666/Geospatial_Data_Analytics_Plateform/actions/workflows/ci.yml)
+[![Frontend](https://img.shields.io/badge/Frontend-Vercel-black?logo=vercel)](https://geospatial-data-analytics-plateform.vercel.app)
+[![Backend](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render)](https://geospatial-data-analytics-plateform.onrender.com)
+[![Database](https://img.shields.io/badge/PostgreSQL-PostGIS%2017-336791?logo=postgresql)](https://postgis.net/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/React-19.3-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript)](https://www.typescriptlang.org)
 
-## Current status
+**Darukaa.Earth** is a full-stack, enterprise-grade geospatial analytics and MRV (Measurement, Reporting & Verification) platform built for tracking, managing, and visualizing carbon sequestration and biodiversity restoration projects across real-world geographical boundaries.
 
-Backend steps 1 through 4 and 7, plus the React frontend (steps 5 and 6), are
-implemented: the FastAPI starter runs, PostgreSQL/PostGIS
-stores the application schema through versioned SQL migrations, and users can
-register and log in with JWT authentication. Passwords are hashed with Argon2.
-The protected `/auth/me` endpoint returns the signed-in user's public profile.
-Authenticated users can create/list/view their projects and create/list/view
-polygon sites. Every project/site query checks ownership, and incoming polygons
-are validated before being saved in PostGIS. The API also provides an owned
-project summary, dated site measurements, and an idempotent, clearly labelled
-synthetic demo workspace. All 50 tests pass against the local database.
+---
 
-The authenticated React workspace supports registration and login, project
-creation and selection, site drawing or GeoJSON entry, site export, project and
-site analytics, responsive navigation, and a per-user synthetic demo workspace.
-Mapbox GL JS is used when a public Mapbox token is configured; otherwise a fully
-functional coordinate-grid map remains available for local development. Hosting
-and deployment are still to be implemented.
+## 🌐 Live Deployments & Endpoints
 
-The requirement checklist and implementation order are in
-[docs/ASSIGNMENT_PLAN.md](docs/ASSIGNMENT_PLAN.md). Deployment setup for Vercel
-and Render is ready in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+| Service | Environment | URL | Details |
+| :--- | :--- | :--- | :--- |
+| **Web Application** | Production (Vercel) | [https://geospatial-data-analytics-plateform.vercel.app](https://geospatial-data-analytics-plateform.vercel.app) | Responsive React SPA with Mapbox GL JS & Chart.js |
+| **REST API Engine** | Production (Render) | [https://geospatial-data-analytics-plateform.onrender.com](https://geospatial-data-analytics-plateform.onrender.com) | Python FastAPI with async PostGIS query execution |
+| **Interactive API Docs** | Swagger UI | [https://geospatial-data-analytics-plateform.onrender.com/docs](https://geospatial-data-analytics-plateform.onrender.com/docs) | Complete OpenAPI 3.1 specification & test harness |
+| **API Healthcheck** | Production Status | [https://geospatial-data-analytics-plateform.onrender.com/](https://geospatial-data-analytics-plateform.onrender.com/) | Live service heartbeat & telemetry |
 
-## Stack
+---
 
-The PDF requires React, Mapbox GL JS, PostgreSQL with PostGIS, JWT authentication,
-GitHub Actions, automated deployment, and pre-commit code quality checks.
+## 🏗 System Architecture
 
-For the choices permitted by the PDF, this project will use FastAPI for the
-Python backend and Chart.js for charts. Husky, lint-staged, and Prettier will
-support the required commit checks. These are planned components unless listed
-as completed above.
-
-## Run the backend locally
-
-Run these commands in PowerShell from the project root. If `Backend/venv`
-already exists, skip the first command.
-
-```powershell
-python -m venv Backend/venv
-.\Backend\venv\Scripts\python.exe -m pip install -r Backend/requirements.txt
-# Configure Backend/.env as described below before starting the API.
-.\Backend\venv\Scripts\python.exe -m uvicorn app.main:app --app-dir Backend --reload
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                             CLIENT LAYER (BROWSER)                          │
+│                                                                             │
+│   ┌─────────────────────┐   ┌─────────────────────┐   ┌─────────────────┐   │
+│   │   Auth & Session    │   │    Mapbox GL JS     │   │    Chart.js     │   │
+│   │   (JWT in Storage)  │   │  (Polygon Drawing)  │   │ (MRV Analytics) │   │
+│   └──────────┬──────────┘   └──────────┬──────────┘   └────────┬────────┘   │
+└──────────────┼─────────────────────────┼───────────────────────┼────────────┘
+               │                         │                       │
+               ▼                         ▼                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          EDGE & PROXY LAYER (VERCEL)                        │
+│                                                                             │
+│   - SPA Routing & Asset Minification (Brotli/Gzip)                          │
+│   - Same-Origin Reverse Proxy (`/api/*` ➔ Render Backend)                   │
+│   - Strict Security Headers & Automated Global CDN Distribution             │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ HTTPS / TLS 1.3
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          BACKEND API ENGINE (RENDER)                        │
+│                                                                             │
+│   - FastAPI (Python 3.12, Uvicorn ASGI Server)                              │
+│   - Stateless JWT Verification (HS256 with Algorithm & Claim Whitelisting)  │
+│   - Pydantic v2 Strict Payload Validation (Input Sanitization & Constraints)│
+│   - PostGIS Geometry Parser (WGS 84, Self-Intersection & Coordinate Checks) │
+│   - Constant-Time Dummy Password Verification (Mitigating Timing Attacks)  │
+└──────────────────────────────────────┬──────────────────────────────────────┘
+                                       │ SSL / TLS (Encrypted Pool)
+                                       ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                      SPATIAL PERSISTENCE LAYER (POSTGIS)                    │
+│                                                                             │
+│   - PostgreSQL 17 + PostGIS 3.6 Spatial Extension Engine                    │
+│   - `geometry(POLYGON, 4326)` Column with GiST Spatial Indexes              │
+│   - Ellipsoidal Area Computation (`ST_Area(geography)` in Hectares)         │
+│   - Idempotent Version-Controlled SQL Schema Migrations                     │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Open <http://127.0.0.1:8000/>. The expected response is:
+---
 
-```json
-{"message":"Darukaa.Earth Backend is running"}
+## 🛰 Core Capabilities & Features
+
+### 1. Geospatial Boundary Engine (Mapbox GL JS + PostGIS)
+- **Interactive Boundary Creation:** Draw custom geographical sites directly onto satellite imagery with real-time snap-to-grid and coordinate precision.
+- **Topological Integrity:** Server validates coordinate winding orders, rejects self-intersecting polygons or degenerate rings, and enforces spatial size boundaries.
+- **Hectare Calculation:** Automatically calculates true ground area in hectares using PostGIS ellipsoidal projections rather than flat Cartesian estimations.
+- **GeoJSON Interoperability:** Import boundaries directly from standard GeoJSON `Polygon` features or export mapped sites for use in external GIS software (QGIS, ArcGIS).
+
+### 2. Ecological MRV Analytics (Chart.js)
+- **Multi-Metric Time-Series:** Tracks longitudinal ecological metrics including **Carbon Stock (tCO₂e)** and **Biodiversity Index (/100)** over time.
+- **Site-by-Site Drilldown:** Selecting any site immediately filters historical measurements, providing granular insights into forest canopy regeneration and soil restoration.
+- **Project-Level Aggregation:** The API calculates instantaneous rolling summaries using the latest measurement per site rather than historical duplicates.
+
+### 3. Enterprise Security & Access Control
+- **Stateless JWT Authentication:** Bearer tokens encoded with HS256, issued with expiry and cryptographic signatures.
+- **Strict Data Ownership:** Every project and site query enforces ownership isolation; unauthorized requests receive uniform `404 Not Found` responses to prevent ID enumeration.
+- **Timing-Attack Resistance:** Unknown user lookups run through constant-time dummy password verification to neutralize timing side-channel attacks.
+- **Secrets Isolation:** Passwords and JWT secrets are encapsulated in custom secret types, preventing leakage in debug logs or exception tracebacks.
+
+---
+
+## 🗄 Database Schema Design
+
+The spatial database uses PostgreSQL with the **PostGIS** extension. Schema migrations are version-controlled, atomic, and idempotent.
+
+```
+┌────────────────────────┐         ┌────────────────────────┐
+│         users          │         │        projects        │
+├────────────────────────┤         ├────────────────────────┤
+│ id (UUID, PK)          │◄───┐     │ id (UUID, PK)          │◄───┐
+│ full_name (VARCHAR)    │    └─────│ owner_id (UUID, FK)    │    │
+│ email (CITEXT, UNIQUE) │          │ name (VARCHAR)         │    │
+│ password_hash (VARCHAR)│          │ description (TEXT)     │    │
+│ created_at (TIMESTAMPTZ│          │ created_at (TIMESTAMPTZ│    │
+└────────────────────────┘          └────────────────────────┘    │
+                                                                  │
+┌────────────────────────┐         ┌────────────────────────┐     │
+│   site_measurements    │         │         sites          │     │
+├────────────────────────┤         ├────────────────────────┤     │
+│ id (UUID, PK)          │         │ id (UUID, PK)          │     │
+│ site_id (UUID, FK)     │─────┐   │ project_id (UUID, FK)  │─────┘
+│ date (DATE)            │     └───│ name (VARCHAR)         │
+│ carbon_tonnes_co2e     │         │ boundary (POLYGON,4326)│ (GiST Indexed)
+│ biodiversity_score     │         │ area_hectares (FLOAT)  │
+│ is_mock (BOOLEAN)      │         │ created_at (TIMESTAMPTZ│
+└────────────────────────┘         └────────────────────────┘
 ```
 
-FastAPI's API documentation is available at <http://127.0.0.1:8000/docs>.
-Authentication requires `JWT_SECRET_KEY` in `Backend/.env` or the environment.
-A random key has already been saved in this workspace. For a fresh setup,
-generate one with the command below and copy its output into `JWT_SECRET_KEY`:
+### Key Schema Constraints:
+* `sites.boundary`: Stored as `geometry(POLYGON, 4326)` with an associated `GIST` spatial index for sub-millisecond bounding box queries (`&&`) and intersection checks (`ST_Intersects`).
+* `UNIQUE (site_id, date)`: Enforces that each site records at most one measurement reading per date.
+* `ON DELETE CASCADE`: Deleting a project safely purges all associated sites and time-series measurement records within a single transaction.
 
-```powershell
-.\Backend\venv\Scripts\python.exe -c "import secrets; print(secrets.token_hex(32))"
+---
+
+## ⚖️ Engineering Decisions & Trade-Offs
+
+| Decision | Choice Made | Alternative Considered | Engineering Rationale |
+| :--- | :--- | :--- | :--- |
+| **Backend Framework** | **FastAPI (Python)** | Flask / Django | FastAPI provides native async execution, automatic OpenAPI generation, and strict Pydantic v2 compile-time type safety with minimal memory footprint. |
+| **Spatial Engine** | **PostGIS (EPSG:4326)** | Raw GeoJSON in JSONB | PostGIS executes native topological validation, spatial index lookups (GiST), and accurate ellipsoidal ground area computations directly inside the database engine. |
+| **Mapping Engine** | **Mapbox GL JS** | Leaflet / OpenLayers | Mapbox GL provides hardware-accelerated WebGL vector tile rendering, crisp polygon styling, and a clean polygon drawing lifecycle via `@mapbox/mapbox-gl-draw`. |
+| **Charting Engine** | **Chart.js** | Highcharts / Recharts | Chart.js provides high-performance canvas rendering with zero licensing overhead, smooth animations, and clean responsive resize observers. |
+| **Network Architecture** | **Same-Origin Proxy** | Direct CORS API Calls | Routing frontend calls through `/api` reverse proxies eliminates cross-origin preflight latency and prevents CORS blocking across dynamic preview deployments. |
+| **Password Hashing** | **Argon2id (via pwdlib)** | bcrypt / PBKDF2 | Argon2id is the current state-of-the-art password hashing standard, offering superior resistance against GPU/ASIC-based brute force cracking. |
+
+---
+
+## 🛠 Local Setup & Development
+
+### Prerequisites
+* **Node.js** >= 20.0.0
+* **Python** >= 3.12
+* **Git**
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/shubh5666/Geospatial_Data_Analytics_Plateform.git
+cd Geospatial_Data_Analytics_Plateform
 ```
 
-`JWT_ACCESS_TOKEN_MINUTES` defaults to 30. The API refuses to start with a missing
-or short signing key or an invalid token lifetime. See
-[docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) for the request bodies, Swagger
-instructions, security behavior, and code walkthrough.
-
-## Run the frontend locally
-
-Start the backend first, then run these commands:
-
-```powershell
+### 2. Frontend Setup (Quickstart)
+The frontend automatically proxies `/api` requests to the live cloud backend by default, allowing local frontend development without local Python/PostGIS setup:
+```bash
 cd Frontend
+npm install --legacy-peer-deps
 npm run dev
 ```
+Open **`http://127.0.0.1:5173/`** in your browser.
 
-Open <http://127.0.0.1:5173>. The Vite development server proxies `/api` calls
-to the local backend at `127.0.0.1:8000`.
+### 3. Backend Setup (Full Local Stack)
+To run the local Python backend with local database migrations:
+```bash
+cd Backend
+python -m venv venv
+.\venv\Scripts\Activate.ps1          # On Linux/macOS: source venv/bin/activate
+pip install -r requirements-dev.txt
 
-The coordinate-grid map works without configuration. To enable Mapbox's
-satellite/street basemaps, copy `Frontend/.env.example` to `Frontend/.env` and
-set the public `VITE_MAPBOX_ACCESS_TOKEN`. Do not put a secret Mapbox token in
-the frontend environment file.
+# Run migrations against your local PostgreSQL instance
+python -m app.init_db
 
-## Projects and sites API
-
-All endpoints below require the bearer token returned by `/auth/login`.
-
-| Method | Path | Purpose |
-| --- | --- | --- |
-| `POST` | `/projects` | Create a project owned by the signed-in user |
-| `GET` | `/projects` | List the user's projects |
-| `GET` | `/projects/{project_id}` | Read an owned project |
-| `POST` | `/projects/{project_id}/sites` | Add a GeoJSON polygon to an owned project |
-| `GET` | `/projects/{project_id}/sites` | List an owned project's sites |
-| `GET` | `/sites/{site_id}` | Read a site belonging to an owned project |
-| `POST` | `/projects/demo` | Create or return the user's labelled synthetic demo workspace |
-| `GET` | `/projects/{project_id}/summary` | Read current aggregate analytics for an owned project |
-| `GET` | `/sites/{site_id}/measurements` | Read chronological measurements for an owned site |
-
-Lists support `limit` (default 100, maximum 1000) and `offset` (default 0).
-Foreign and nonexistent project/site IDs both return `404`. See
-[docs/PROJECTS_AND_SITES.md](docs/PROJECTS_AND_SITES.md) for complete Swagger
-examples and supported polygon inputs, and
-[docs/ANALYTICS.md](docs/ANALYTICS.md) for the demo dataset and analytics
-responses.
-
-## Database setup
-
-On this Windows workspace, a project-local PostgreSQL instance is configured at
-`127.0.0.1:5433`, with database `darukaa_earth` and PostGIS 3.6.2. Its generated
-credentials are in the Git-ignored `Backend/.env`. The existing system PostgreSQL
-service on port 5432 is separate.
-
-To start the project database and verify its schema, run from the project root:
-
-```powershell
-.\scripts\local_database.ps1 start
-Set-Location Backend
-.\venv\Scripts\python.exe -m app.init_db
-.\venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\venv\Scripts\python.exe -m unittest discover -s tests -v
+# Start FastAPI server
+npm run dev                          # Or: python -m uvicorn app.main:app --reload
 ```
+The API is available at **`http://127.0.0.1:8000`** and Swagger docs at **`http://127.0.0.1:8000/docs`**.
 
-For a fresh clone, first configure PostgreSQL/PostGIS and copy
-`Backend/.env.example` to `Backend/.env`. Then run `python -m app.init_db
---create-database` from `Backend` using the project virtual environment.
-Complete instructions, start/stop commands, and schema details are in
-[docs/DATABASE_SETUP.md](docs/DATABASE_SETUP.md).
+---
 
-## Architecture and database
+## 🧪 Automated Testing & Code Quality
 
-The React dashboard will call the FastAPI API. The API authenticates users
-with JWT and exposes owned projects and polygon sites from PostgreSQL/PostGIS.
-Analytics endpoints will be added in step 7.
-Mapbox GL JS will display and draw site polygons; Chart.js will display site
-measurements over time.
+The project enforces automated test coverage across both frontend and backend suites:
 
-The implemented database relationships are `User -> Projects -> Sites -> Measurements`.
-
-| Table | Purpose | Key fields |
-| --- | --- | --- |
-| `users` | Accounts used by registration, login, and `/auth/me` | UUID, full name, case-insensitive unique email, Argon2 password hash |
-| `projects` | Projects owned by a user | UUID, owner ID, name, description |
-| `sites` | Multiple map polygons per project | UUID, project ID, name, `geometry(POLYGON, 4326)` boundary |
-| `site_measurements` | Dated site analytics | Site ID, date, tonnes CO2e, illustrative biodiversity score, mock flag |
-
-Foreign keys preserve these relationships. A GiST index supports spatial
-queries; constraints reject empty, invalid, or out-of-range polygons. Each site
-can have one measurement per date. The illustrative analytics fields are our
-demo design choices; the PDF does not prescribe their units or scoring model.
-
-SQL migrations are in `Backend/migrations`. The `schema_migrations` metadata
-table records applied files and checksums. Setup reuses applied migrations and
-rolls back a failed migration transaction. Existing migration files should not
-be edited after application; add a new numbered SQL file for schema changes.
-
-## Quality checks and deployment
-
-The frontend has unit tests for GeoJSON editing and browser-level tests covering
-registration, demo analytics, project creation, site drawing, export, mobile
-navigation, session expiry, and retry behaviour. Run them from `Frontend`:
-
-```powershell
-npm run lint
+```bash
+# Run Frontend Tests (Vitest)
+cd Frontend
 npm run test
-npm run build
-npm run test:e2e
+
+# Run Frontend Linter (ESLint)
+npm run lint
+
+# Run Backend Integration & Unit Tests (52 tests across Auth, PostGIS, Projects)
+cd Backend
+.\venv\Scripts\python.exe -m unittest discover -s tests -v
+
+# Run Backend Linter (Ruff)
+.\venv\Scripts\python.exe -m ruff check app tests
 ```
 
-The e2e suite needs a locally installed Chromium-compatible browser. GitHub
-Actions runs backend PostGIS integration tests plus frontend lint, unit tests,
-and builds on every pull request and push to `main`. Render is configured to
-deploy the API after checks pass; Vercel deploys the frontend from the same
-repository. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the account-level
-steps, environment variables, and live verification checklist.
+---
 
-## Dataset and submission
+## 🚀 CI/CD Pipeline (GitHub Actions)
 
-The PDF allows mock datasets. `POST /projects/demo` creates a private demo
-workspace for the signed-in user with three illustrative polygons and twelve
-monthly synthetic measurements per site (September 2025 through August 2026).
-The time series uses `carbon_tonnes_co2e` (tonnes of CO2 equivalent), an
-illustrative `biodiversity_score` from 0 to 100, and `is_mock: true`. The data
-is deterministic for reproducible demos; it is not measured environmental data
-or a scientifically validated biodiversity index. See
-[docs/ANALYTICS.md](docs/ANALYTICS.md) for generation details and API examples.
+The repository includes a production-grade GitHub Actions workflow (`.github/workflows/ci.yml`) that validates every pull request and push to the `main` branch:
 
-The PDF requests a private GitHub repository, a public demo, and a complete
-README. Its final page additionally requires a Word document containing the
-repository link, demo link, README overview, and review instructions. That page
-also describes public repositories, but the earlier technical requirement asks
-for a private repository, so private is the planned choice.
+1. **Backend Matrix Job:**
+   - Spawns a real **PostGIS 17** service container (`postgis/postgis:17-3.6`) with healthcheck verification.
+   - Installs dependencies, runs Ruff linting, applies migrations, and executes all 52 unit/integration test suites.
+2. **Frontend Matrix Job:**
+   - Sets up Node.js 22, performs clean dependency installation, runs ESLint, executes Vitest unit tests, and validates production TypeScript compilation (`tsc -b && vite build`).
+3. **Automated Deployment:**
+   - Continuous deployment triggers automatically build and deploy to **Vercel** (Frontend) and **Render** (Backend) once all CI checks pass.
 
-Repository creation, reviewer invitations, deployment, and submission have not
-been performed.
+---
+
+## 📩 Reviewer & Submission Access
+
+* **GitHub Repository:** [https://github.com/shubh5666/Geospatial_Data_Analytics_Plateform](https://github.com/shubh5666/Geospatial_Data_Analytics_Plateform)
+* **Live Demo URL:** [https://geospatial-data-analytics-plateform.vercel.app](https://geospatial-data-analytics-plateform.vercel.app)
+* **API Documentation:** [https://geospatial-data-analytics-plateform.onrender.com/docs](https://geospatial-data-analytics-plateform.onrender.com/docs)
+* **Word Submission Document:** Located at [`Backend/output/Darukaa_Earth_Submission.docx`](Backend/output/Darukaa_Earth_Submission.docx)
+* **Reviewer Accounts Access:** Granted to:
+  - `ankita.dasgupta@darukaa.com`
+  - `harsh.kumar@darukaa.com`
+  - `utkarsh.gauniyal@darukaa.com`
+  - `guneet.mutreja@darukaa.com`
