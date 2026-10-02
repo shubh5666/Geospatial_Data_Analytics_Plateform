@@ -64,6 +64,24 @@ export function createCenteredPlot(bounds: Bounds, hectares = 5): Polygon {
   );
 }
 
+export function simplifyPoints(points: number[][], toleranceMeters = 15): number[][] {
+  if (points.length <= 4) return points;
+  const result: number[][] = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    const prev = result[result.length - 1];
+    const curr = points[i];
+    const dx = (curr[0] - prev[0]) * 111320 * Math.cos((prev[1] * Math.PI) / 180);
+    const dy = (curr[1] - prev[1]) * 111320;
+    if (Math.hypot(dx, dy) >= toleranceMeters) {
+      result.push(curr);
+    }
+  }
+  if (result.length < 3 && points.length >= 3) {
+    return [points[0], points[Math.floor(points.length / 2)], points[points.length - 1]];
+  }
+  return result;
+}
+
 export function readPolygon(text: string): Polygon {
   let geometry: unknown;
   try { geometry = JSON.parse(text); } catch { throw new Error('Enter valid GeoJSON. Check the commas and brackets.'); }

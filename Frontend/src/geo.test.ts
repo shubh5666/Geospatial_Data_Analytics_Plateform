@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { approximateHectares, closePolygon, coordinateAt, createCenteredPlot, createRectanglePolygon, readPolygon, siteBounds } from './geo';
+import { approximateHectares, closePolygon, coordinateAt, createCenteredPlot, createRectanglePolygon, readPolygon, simplifyPoints, siteBounds } from './geo';
 import type { Site } from './types';
 
 describe('boundary editing', () => {
@@ -41,5 +41,11 @@ describe('boundary editing', () => {
     expect(plot.type).toBe('Polygon');
     const ha = approximateHectares(plot.coordinates[0].slice(0, 4));
     expect(ha).toBeCloseTo(5, 0);
+  });
+  it('simplifies a dense path of points while preserving key vertices', () => {
+    const dense = Array.from({ length: 20 }, (_, i) => [77.0 + i * 0.0001, 28.0 + (i % 2) * 0.0001]);
+    const simplified = simplifyPoints(dense, 10);
+    expect(simplified.length).toBeLessThanOrEqual(dense.length);
+    expect(simplified.length).toBeGreaterThanOrEqual(3);
   });
 });

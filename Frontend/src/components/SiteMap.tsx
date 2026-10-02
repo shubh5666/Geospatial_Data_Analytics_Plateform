@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { Check, Crosshair, LocateFixed, MapPin, Minus, Pentagon, Plus, RotateCcw, Sparkles, Square, Undo2, X } from 'lucide-react';
+import { Check, Crosshair, LocateFixed, MapPin, Minus, Pencil, Pentagon, Plus, RotateCcw, Sparkles, Square, Undo2, X } from 'lucide-react';
 import type { Polygon, Site } from '../types';
-import { approximateHectares, closePolygon, coordinateAt, createCenteredPlot, createRectanglePolygon, number, siteBounds, type Bounds } from '../geo';
+import { approximateHectares, closePolygon, coordinateAt, createCenteredPlot, createRectanglePolygon, number, simplifyPoints, siteBounds, type Bounds } from '../geo';
 
 const MapboxMap = lazy(() => import('./MapboxMap'));
 export interface MapProps {
@@ -17,19 +17,23 @@ export function SiteMap(props: MapProps) {
 
 function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCancel }: MapProps) {
   const [bounds, setBounds] = useState<Bounds>(() => siteBounds(sites));
-  const [mode, setMode] = useState<'rectangle' | 'polygon'>('rectangle');
+  const [mode, setMode] = useState<'polygon' | 'sketch' | 'rectangle'>('polygon');
   const [points, setPoints] = useState<number[][]>([]);
+  const [sketchPoints, setSketchPoints] = useState<number[][]>([]);
+  const [isSketching, setIsSketching] = useState(false);
+
+  // Rectangle mode state
+  const [rectCorner1, setRectCorner1] = useState<[number, number] | null>(null);
+  const [rectCorner2, setRectCorner2] = useState<[number, number] | null>(null);
+
+  // Interactive state
+  const [hoverCoord, setHoverCoord] = useState<[number, number] | null>(null);
+  const [snapToStart, setSnapToStart] = useState(false);
+
   const [centerOpen, setCenterOpen] = useState(false);
   const [longitude, setLongitude] = useState(((bounds[0] + bounds[2]) / 2).toFixed(4));
   const [latitude, setLatitude] = useState(((bounds[1] + bounds[3]) / 2).toFixed(4));
   const [centerError, setCenterError] = useState('');
-
-  // Interactive drawing states
-  const [hoverCoord, setHoverCoord] = useState<[number, number] | null>(null);
-  const [dragStart, setDragStart] = useState<[number, number] | null>(null);
-  const [dragCurrent, setDragCurrent] = useState<[number, number] | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [snapToStart, setSnapToStart] = useState(false);
 
   const x = (value: number) => (value - bounds[0]) / (bounds[2] - bounds[0]) * 1000;
   const y = (value: number) => (bounds[3] - value) / (bounds[3] - bounds[1]) * 600;
@@ -38,9 +42,10 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
   useEffect(() => {
     if (!drawing) {
       setPoints([]);
-      setDragStart(null);
-      setDragCurrent(null);
-      setIsDragging(false);
+      setSketchPoints([]);
+      setIsSketching(false);
+      setRectCorner1(null);
+      setRectCorner2(null);
       setSnapToStart(false);
       setHoverCoord(null);
     }
@@ -52,11 +57,13 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         onCancel();
-      } else if (event.key === 'Enter' && mode === 'polygon' && points.length >= 3) {
-        onBoundary(closePolygon(points));
-        setPoints([]);
-      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z' && mode === 'polygon') {
-        setPoints((prev) => prev.slice(0, -1));
+      } else if (event.key === 'Enter') {
+        if (mode === 'polygon' && points.length >= 3) {
+          onBoundary(closePolygon(points));
+          setPoints([]);
+        }
+      } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+        if (mode === 'polygon') setPoints((prev) => prev.slice(0, -1));
       }
     }
     window.addEventListener('keydown', handleKeyDown);
@@ -77,71 +84,99 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
 
     if (!drawing) return;
 
-    if (mode === 'rectangle' && isDragging) {
-      setDragCurrent(coord);
-    } else if (mode === 'polygon' && points.length >= 1) {
-      const p0x = x(points[0][0]);
-      const p0y = y(points[0][1]);
-      const dist = Math.hypot(px - p0x, py - p0y);
-      setSnapToStart(dist < 22 && points.length >= 3);
+    if (mode === 'polygon') {
+      if (points.length >= 3) {
+        const p0x = x(points[0][0]);
+        const p0y = y(points[0][1]);
+        setSnapToStart(Math.hypot(px - p0x, py - p0y) < 26);
+      } else {
+        setSnapToStart(false);
+      }
+    } else if (mode === 'sketch' && isSketching) {
+      const prev = sketchPoints[sketchPoints.length - 1];
+      if (!prev) {
+        setSketchPoints([coord]);
+      } else {
+        const dx = Math.abs(x(coord[0]) - x(prev[0]));
+        const dy = Math.abs(y(coord[1]) - y(prev[1]));
+        if (dx >= 4 || dy >= 4) {
+          setSketchPoints((prev) => [...prev, coord]);
+        }
+      }
+    } else if (mode === 'rectangle' && rectCorner1) {
+      setRectCorner2(coord);
     }
   }
 
   function handleMouseDown(event: React.MouseEvent<SVGSVGElement>) {
     if (!drawing) return;
-    if (mode === 'rectangle') {
-      const { coord } = getCoord(event);
-      setDragStart(coord);
-      setDragCurrent(coord);
-      setIsDragging(true);
+    const { coord } = getCoord(event);
+    if (mode === 'sketch') {
+      setIsSketching(true);
+      setSketchPoints([coord]);
+    } else if (mode === 'rectangle') {
+      if (!rectCorner1) {
+        setRectCorner1(coord);
+        setRectCorner2(coord);
+      }
     }
   }
 
-  function handleMouseUp() {
+  function handleMouseUp(event: React.MouseEvent<SVGSVGElement>) {
     if (!drawing) return;
-    if (mode === 'rectangle' && isDragging && dragStart && dragCurrent) {
-      const minX = Math.min(dragStart[0], dragCurrent[0]);
-      const maxX = Math.max(dragStart[0], dragCurrent[0]);
-      const minY = Math.min(dragStart[1], dragCurrent[1]);
-      const maxY = Math.max(dragStart[1], dragCurrent[1]);
-      if ((maxX - minX) > 0.0001 && (maxY - minY) > 0.0001) {
-        try {
-          const poly = createRectanglePolygon(dragStart, dragCurrent);
-          onBoundary(poly);
-        } catch {
-          // Ignore zero-area drag
+    if (mode === 'sketch' && isSketching) {
+      setIsSketching(false);
+      if (sketchPoints.length >= 4) {
+        const simplified = simplifyPoints(sketchPoints, 12);
+        if (simplified.length >= 3) {
+          try {
+            onBoundary(closePolygon(simplified));
+          } catch {
+            // ignore
+          }
         }
       }
-      setIsDragging(false);
-      setDragStart(null);
-      setDragCurrent(null);
+      setSketchPoints([]);
+    } else if (mode === 'rectangle' && rectCorner1) {
+      const { coord } = getCoord(event);
+      const minX = Math.min(rectCorner1[0], coord[0]);
+      const maxX = Math.max(rectCorner1[0], coord[0]);
+      const minY = Math.min(rectCorner1[1], coord[1]);
+      const maxY = Math.max(rectCorner1[1], coord[1]);
+      if ((maxX - minX) > 0.0001 && (maxY - minY) > 0.0001) {
+        try {
+          const poly = createRectanglePolygon(rectCorner1, coord);
+          onBoundary(poly);
+          setRectCorner1(null);
+          setRectCorner2(null);
+        } catch {
+          // ignore
+        }
+      }
     }
   }
 
   function handleClick(event: React.MouseEvent<SVGSVGElement>) {
     if (!drawing) return;
     const { coord } = getCoord(event);
+
     if (mode === 'polygon') {
       if (snapToStart && points.length >= 3) {
         onBoundary(closePolygon(points));
         setPoints([]);
         setSnapToStart(false);
       } else {
+        // Every single click adds a point immediately and reliably!
         setPoints((prev) => [...prev, coord]);
       }
-    } else if (mode === 'rectangle' && !isDragging) {
-      if (!dragStart) {
-        setDragStart(coord);
-        setDragCurrent(coord);
-      } else {
-        try {
-          const poly = createRectanglePolygon(dragStart, coord);
-          onBoundary(poly);
-        } catch {
-          // ignore
-        }
-        setDragStart(null);
-        setDragCurrent(null);
+    } else if (mode === 'rectangle' && rectCorner1 && !isSketching) {
+      try {
+        const poly = createRectanglePolygon(rectCorner1, coord);
+        onBoundary(poly);
+        setRectCorner1(null);
+        setRectCorner2(null);
+      } catch {
+        // ignore
       }
     }
   }
@@ -165,29 +200,32 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
 
   const liveHectares = (() => {
     if (!drawing) return null;
-    if (mode === 'rectangle' && dragStart && dragCurrent) {
-      const minX = Math.min(dragStart[0], dragCurrent[0]);
-      const maxX = Math.max(dragStart[0], dragCurrent[0]);
-      const minY = Math.min(dragStart[1], dragCurrent[1]);
-      const maxY = Math.max(dragStart[1], dragCurrent[1]);
-      return approximateHectares([
-        [minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY],
-      ]);
-    }
-    if (mode === 'polygon' && points.length >= 2 && hoverCoord) {
-      return approximateHectares([...points, hoverCoord]);
-    }
-    if (mode === 'polygon' && points.length >= 3) {
-      return approximateHectares(points);
+    if (mode === 'polygon') {
+      if (points.length >= 2 && hoverCoord) {
+        return approximateHectares([...points, snapToStart ? points[0] : hoverCoord]);
+      }
+      if (points.length >= 3) return approximateHectares(points);
+    } else if (mode === 'sketch' && sketchPoints.length >= 3) {
+      return approximateHectares(sketchPoints);
+    } else if (mode === 'rectangle' && rectCorner1) {
+      const p2 = rectCorner2 || hoverCoord;
+      if (p2) {
+        const minX = Math.min(rectCorner1[0], p2[0]);
+        const maxX = Math.max(rectCorner1[0], p2[0]);
+        const minY = Math.min(rectCorner1[1], p2[1]);
+        const maxY = Math.max(rectCorner1[1], p2[1]);
+        return approximateHectares([[minX, minY], [maxX, minY], [maxX, maxY], [minX, maxY]]);
+      }
     }
     return null;
   })();
 
-  const rectPreview = (mode === 'rectangle' && dragStart && dragCurrent) ? (() => {
-    const minX = Math.min(dragStart[0], dragCurrent[0]);
-    const maxX = Math.max(dragStart[0], dragCurrent[0]);
-    const minY = Math.min(dragStart[1], dragCurrent[1]);
-    const maxY = Math.max(dragStart[1], dragCurrent[1]);
+  const rectPreview = (mode === 'rectangle' && rectCorner1 && (rectCorner2 || hoverCoord)) ? (() => {
+    const p2 = (rectCorner2 || hoverCoord)!;
+    const minX = Math.min(rectCorner1[0], p2[0]);
+    const maxX = Math.max(rectCorner1[0], p2[0]);
+    const minY = Math.min(rectCorner1[1], p2[1]);
+    const maxY = Math.max(rectCorner1[1], p2[1]);
     return {
       x: x(minX),
       y: y(maxY),
@@ -224,11 +262,16 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
           <path d="M 250 0 L 0 0 0 150" fill="none" stroke="#ced8c7" strokeWidth="1" />
         </pattern>
       </defs>
-      <rect width="1000" height="600" fill="url(#map-grid-large)" />
+      <rect width="1000" height="600" fill="url(#map-grid-large)" style={{ pointerEvents: 'none' }} />
 
-      {/* Existing site polygons */}
+      {/* Existing site polygons (disabled pointer-events during drawing so they never intercept clicks) */}
       {sites.map((site, index) => (
-        <g key={site.id} className="site-polygon" onClick={(event) => { if (!drawing) { event.stopPropagation(); onSelect(site.id); } }}>
+        <g
+          key={site.id}
+          className="site-polygon"
+          style={{ pointerEvents: drawing ? 'none' : 'auto' }}
+          onClick={(event) => { if (!drawing) { event.stopPropagation(); onSelect(site.id); } }}
+        >
           <path
             d={site.boundary.coordinates.map((ring) => ring.map((p, i) => `${i ? 'L' : 'M'} ${x(p[0])} ${y(p[1])}`).join(' ') + 'Z').join(' ')}
             fill={selectedId === site.id ? '#80ae64' : ['#94b898', '#8fafad', '#a9b981'][index % 3]}
@@ -241,9 +284,35 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
         </g>
       ))}
 
+      {/* FREEHAND SKETCH PREVIEW */}
+      {drawing && mode === 'sketch' && sketchPoints.length > 0 && (
+        <g style={{ pointerEvents: 'none' }}>
+          <polyline
+            points={sketchPoints.map((p) => `${x(p[0])},${y(p[1])}`).join(' ')}
+            fill="rgba(125, 185, 105, 0.28)"
+            stroke="#1d5530"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {liveHectares != null && liveHectares > 0 && (
+            <text
+              x={x(sketchPoints[sketchPoints.length - 1][0])}
+              y={y(sketchPoints[sketchPoints.length - 1][1]) - 14}
+              fill="#184227"
+              fontSize="11"
+              fontWeight="bold"
+              textAnchor="middle"
+            >
+              ~{number(liveHectares)} ha
+            </text>
+          )}
+        </g>
+      )}
+
       {/* RECTANGLE PREVIEW */}
       {rectPreview && (
-        <g className="drag-guide-box">
+        <g className="drag-guide-box" style={{ pointerEvents: 'none' }}>
           <rect
             x={rectPreview.x}
             y={rectPreview.y}
@@ -266,7 +335,7 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
 
       {/* POLYGON PREVIEW */}
       {drawing && mode === 'polygon' && points.length > 0 && (
-        <g>
+        <g style={{ pointerEvents: 'none' }}>
           {hoverCoord && points.length >= 2 && (
             <polygon
               points={[...points, snapToStart ? points[0] : hoverCoord].map((p) => `${x(p[0])},${y(p[1])}`).join(' ')}
@@ -298,16 +367,16 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
 
           {points.map((p, i) => (
             <g key={i}>
-              <circle cx={x(p[0])} cy={y(p[1])} r="5.5" fill="#fff" stroke="#1d5330" strokeWidth="2.5" />
-              <circle cx={x(p[0])} cy={y(p[1])} r="2.5" fill="#1d5330" />
+              <circle cx={x(p[0])} cy={y(p[1])} r="7" fill="#1d5330" stroke="#fff" strokeWidth="2.5" />
+              <text x={x(p[0])} y={y(p[1]) + 3.5} textAnchor="middle" fill="#fff" fontSize="8" fontWeight="bold">{i + 1}</text>
             </g>
           ))}
 
           {snapToStart && points.length >= 3 && (
             <g>
               <circle cx={x(points[0][0])} cy={y(points[0][1])} className="snap-ring" fill="none" stroke="#256b37" />
-              <rect x={x(points[0][0]) + 10} y={y(points[0][1]) - 26} width="95" height="20" rx="4" fill="#184227" />
-              <text x={x(points[0][0]) + 16} y={y(points[0][1]) - 12} fill="#fff" fontSize="10" fontWeight="600">Click to close</text>
+              <rect x={x(points[0][0]) + 12} y={y(points[0][1]) - 26} width="96" height="20" rx="4" fill="#184227" />
+              <text x={x(points[0][0]) + 18} y={y(points[0][1]) - 12} fill="#fff" fontSize="10" fontWeight="600">Click to close</text>
             </g>
           )}
         </g>
@@ -351,32 +420,41 @@ function CoordinateMap({ sites, selectedId, onSelect, drawing, onBoundary, onCan
         <div className="draw-tools-group" role="group" aria-label="Drawing mode">
           <button
             type="button"
-            className={`draw-tool-btn ${mode === 'rectangle' ? 'active' : ''}`}
-            onClick={() => { setMode('rectangle'); setPoints([]); }}
+            className={`draw-tool-btn ${mode === 'polygon' ? 'active' : ''}`}
+            onClick={() => { setMode('polygon'); setPoints([]); setRectCorner1(null); setRectCorner2(null); setSketchPoints([]); }}
           >
-            <Square size={13} />Rectangle
+            <Pentagon size={13} />Click Corners
           </button>
           <button
             type="button"
-            className={`draw-tool-btn ${mode === 'polygon' ? 'active' : ''}`}
-            onClick={() => { setMode('polygon'); setDragStart(null); setDragCurrent(null); }}
+            className={`draw-tool-btn ${mode === 'sketch' ? 'active' : ''}`}
+            onClick={() => { setMode('sketch'); setPoints([]); setRectCorner1(null); setRectCorner2(null); setSketchPoints([]); }}
           >
-            <Pentagon size={13} />Polygon
+            <Pencil size={13} />Freehand Sketch
+          </button>
+          <button
+            type="button"
+            className={`draw-tool-btn ${mode === 'rectangle' ? 'active' : ''}`}
+            onClick={() => { setMode('rectangle'); setPoints([]); setRectCorner1(null); setRectCorner2(null); setSketchPoints([]); }}
+          >
+            <Square size={13} />Rectangle
           </button>
         </div>
 
         <div className="draw-info">
           <span className="pulse-dot" />
           <span className="draw-info-text">
-            {mode === 'rectangle'
-              ? (isDragging ? 'Release to set plot boundary' : 'Click & drag across map to draw a plot')
-              : (points.length === 0
-                  ? 'Click anywhere for 1st corner'
+            {mode === 'polygon'
+              ? (points.length === 0
+                  ? 'Click anywhere on map for Corner 1'
                   : points.length < 3
-                    ? `${points.length} corner${points.length > 1 ? 's' : ''} added • Click next corner`
+                    ? `Corner ${points.length} placed! Click for Corner ${points.length + 1}`
                     : snapToStart
-                      ? '✨ Click start point to finish shape!'
-                      : `${points.length} corners • Double-click or click start point to finish`)}
+                      ? '✨ Click start point (1) to close shape!'
+                      : `${points.length} corners placed • Double-click or click start point to finish`)
+              : mode === 'sketch'
+                ? (isSketching ? 'Drawing sketch… release mouse to finish site' : 'Hold mouse down & drag to sketch boundary')
+                : (rectCorner1 ? 'Click opposite corner or drag to complete box' : 'Click corner 1 or drag across map')}
           </span>
           {liveHectares != null && liveHectares > 0 && (
             <span className="draw-area-chip">~{number(liveHectares)} ha</span>
