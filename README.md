@@ -71,9 +71,10 @@ instructions, security behavior, and code walkthrough.
 
 ## Run the frontend locally
 
-Start the backend first, then run this command from the project root:
+Start the backend first, then run these commands:
 
 ```powershell
+cd Frontend
 npm run dev
 ```
 

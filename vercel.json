@@ -1,8 +1,0 @@
-{
-  "buildCommand": "npm run build --workspace=Frontend",
-  "installCommand": "npm ci --include=dev",
-  "outputDirectory": "Frontend/dist",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/" }
-  ]
-}
