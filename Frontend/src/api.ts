@@ -1,5 +1,7 @@
 const SESSION_KEY = 'darukaa.session';
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '') || '/api';
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '') ||
+  (import.meta.env.PROD ? 'https://darukaa-earth-api.onrender.com' : '/api');
 
 export const session = {
   get: () => sessionStorage.getItem(SESSION_KEY),
