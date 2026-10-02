@@ -1,7 +1,7 @@
 const SESSION_KEY = 'darukaa.session';
 const apiBaseUrl =
   import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '') ||
-  (import.meta.env.PROD ? 'https://darukaa-earth-api.onrender.com' : '/api');
+  (import.meta.env.PROD ? 'https://geospatial-data-analytics-plateform.onrender.com' : '/api');
 
 export const session = {
   get: () => sessionStorage.getItem(SESSION_KEY),
@@ -18,7 +18,7 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   const headers = new Headers(options.headers);
   if (options.body) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  const timeout = AbortSignal.timeout(30_000);
+  const timeout = AbortSignal.timeout(60_000);
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl}${path}`, {
