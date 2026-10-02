@@ -23,6 +23,7 @@ cors_settings = load_cors_settings()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_settings.allowed_origins,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],

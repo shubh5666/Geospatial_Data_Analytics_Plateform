@@ -1,7 +1,6 @@
 const SESSION_KEY = 'darukaa.session';
 const apiBaseUrl =
-  import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '') ||
-  (import.meta.env.PROD ? 'https://geospatial-data-analytics-plateform.onrender.com' : '/api');
+  import.meta.env.VITE_API_BASE_URL?.trim().replace(/\/+$/, '') || '/api';
 
 export const session = {
   get: () => sessionStorage.getItem(SESSION_KEY),
