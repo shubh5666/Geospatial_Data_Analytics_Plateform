@@ -13,7 +13,7 @@ from docx.shared import Inches, Pt, RGBColor
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "output" / "Darukaa_Earth_Submission.docx"
 REPOSITORY_URL = "https://github.com/shubh5666/Geospatial_Data_Analytics_Plateform"
-FRONTEND_URL = "https://geospatial-data-analytics-plateform-frontend-9tigroc7g.vercel.app/"
+FRONTEND_URL = "https://geospatial-data-analytics-plateform.vercel.app"
 BACKEND_URL = "https://geospatial-data-analytics-plateform.onrender.com"
 
 
