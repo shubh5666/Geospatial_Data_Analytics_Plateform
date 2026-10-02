@@ -7,13 +7,14 @@ import unittest
 from unittest.mock import patch
 from uuid import UUID, uuid4
 
+from fastapi.testclient import TestClient
+from psycopg import sql
+
 from app.auth import create_access_token
 from app.config import AuthSettings
 from app.database import connect_database, get_db
 from app.init_db import apply_migrations
 from app.main import app
-from fastapi.testclient import TestClient
-from psycopg import sql
 
 TEST_SECRET = "projects-test-only-signing-key-" + "a" * 48
 POLYGON = {

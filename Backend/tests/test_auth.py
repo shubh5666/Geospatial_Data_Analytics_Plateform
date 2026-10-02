@@ -7,12 +7,13 @@ from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import jwt
+from fastapi.testclient import TestClient
+from psycopg import sql
+
 from app.auth import password_hasher
 from app.database import connect_database, get_db
 from app.init_db import apply_migrations
 from app.main import app
-from fastapi.testclient import TestClient
-from psycopg import sql
 
 TEST_SECRET = "test-only-jwt-secret-" + "a" * 48
 TEST_PASSWORD = "test passphrase with spaces"

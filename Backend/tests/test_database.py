@@ -10,9 +10,10 @@ from pathlib import Path
 from uuid import uuid4
 
 import psycopg
+from psycopg import sql
+
 from app.database import connect_database
 from app.init_db import MIGRATIONS_DIR, apply_migrations
-from psycopg import sql
 
 VALID_POLYGON = "POLYGON((77 28, 77.01 28, 77.01 28.01, 77 28.01, 77 28))"
 
