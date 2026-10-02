@@ -16,7 +16,7 @@
     "prepare": "node scripts/prepare-hooks.mjs"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "husky": "9.1.7",
